@@ -482,6 +482,10 @@ parse_named_action(enum ofputil_action_code code, const struct flow *flow,
         parse_enqueue(arg, ofpacts);
         break;
 
+    case OFPUTIL_OFPAT10_MTDMA_SLOT:
+        ofpact_put_MTDMA_SLOT(ofpacts)->slot = str_to_u32(arg);
+        break;
+
     case OFPUTIL_NXAST_RESUBMIT:
         parse_resubmit(arg, ofpacts);
         break;

@@ -203,6 +203,7 @@ enum ofp10_action_type {
     OFPAT10_SET_TP_SRC,         /* TCP/UDP source port. */
     OFPAT10_SET_TP_DST,         /* TCP/UDP destination port. */
     OFPAT10_ENQUEUE,            /* Output to queue. */
+    OFPAT10_MTDMA_SLOT,         /* Set mtdma slot */
     OFPAT10_VENDOR = 0xffff
 };
 
@@ -252,6 +253,14 @@ struct ofp_action_enqueue {
 };
 OFP_ASSERT(sizeof(struct ofp_action_enqueue) == 16);
 
+/* OFPAT10_MTDMA_SLOT action struct: mark pkts with specific mtdma slot . */
+struct ofp_action_mtdma {
+    ovs_be16 type;            /* OFPAT10_MTDMA_SLOT. */
+    ovs_be16 len;             /* Len is 8. */
+    ovs_be32 slot;            /* MTDMA Slot. */
+};
+OFP_ASSERT(sizeof(struct ofp_action_mtdma) == 8);
+
 union ofp_action {
     ovs_be16 type;
     struct ofp_action_header header;
@@ -262,6 +271,7 @@ union ofp_action {
     struct ofp_action_nw_addr nw_addr;
     struct ofp_action_nw_tos nw_tos;
     struct ofp_action_tp_port tp_port;
+    struct ofp_action_mtdma mtdma;
 };
 OFP_ASSERT(sizeof(union ofp_action) == 8);
 

@@ -282,6 +282,7 @@ enum ovs_key_attr {
 	OVS_KEY_ATTR_ND,        /* struct ovs_key_nd */
 	OVS_KEY_ATTR_IPV4_TUNNEL,  /* struct ovs_key_ipv4_tunnel */
 	OVS_KEY_ATTR_TUN_ID = 63,  /* be64 tunnel ID */
+	OVS_KEY_ATTR_MTDMA_SLOT,   /* u32 mtdma slot */
 	__OVS_KEY_ATTR_MAX
 };
 

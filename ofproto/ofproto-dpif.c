@@ -282,6 +282,7 @@ struct action_xlate_ctx {
     uint16_t user_cookie_offset;/* Used for user_action_cookie fixup. */
     bool exit;                  /* No further actions should be processed. */
     struct flow orig_flow;      /* Copy of original flow. */
+    uint32_t mtdma_slot;        /* MTDMA Slot number. */
 };
 
 static void action_xlate_ctx_init(struct action_xlate_ctx *,
@@ -4498,6 +4499,7 @@ facet_revalidate(struct facet *facet)
 
             subfacet_install(subfacet,
                              odp_actions.data, odp_actions.size, &stats, slow);
+			/* printf("Installing subfacet with %d actions\n", odp_actions.size); */
             subfacet_update_stats(subfacet, &stats);
 
             if (!new_actions) {
@@ -5390,6 +5392,7 @@ compose_output_action__(struct action_xlate_ctx *ctx, uint16_t ofp_port,
         ctx->flow.vlan_tci = htons(0);
     }
     commit_odp_actions(&ctx->flow, &ctx->base_flow, ctx->odp_actions);
+	commit_mtdma_slot_action(ctx->mtdma_slot, ctx->odp_actions);
     nl_msg_put_u32(ctx->odp_actions, OVS_ACTION_ATTR_OUTPUT, out_port);
 
     ctx->sflow_odp_port = odp_port;
@@ -6036,6 +6039,10 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
             assert(ctx->table_id < ogt->table_id);
             xlate_table_action(ctx, ctx->flow.in_port, ogt->table_id, true);
             break;
+
+        case OFPACT_MTDMA_SLOT:
+            ctx->mtdma_slot = ofpact_get_MTDMA_SLOT(a)->slot;
+            break;
         }
         }
     }
@@ -6070,6 +6077,7 @@ action_xlate_ctx_init(struct action_xlate_ctx *ctx,
     ctx->resubmit_hook = NULL;
     ctx->report_hook = NULL;
     ctx->resubmit_stats = NULL;
+	ctx->mtdma_slot = 255;	/* No slot assigned (sch_mtdma default) */
 }
 
 /* Translates the 'ofpacts_len' bytes of "struct ofpacts" starting at 'ofpacts'

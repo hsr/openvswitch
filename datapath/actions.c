@@ -377,6 +377,10 @@ static int execute_set_action(struct sk_buff *skb,
 		err = set_tcp(skb, nla_data(nested_attr));
 		break;
 
+	case OVS_KEY_ATTR_MTDMA_SLOT:
+		OVS_CB(skb)->mtdma_slot = nla_get_u32(nested_attr);
+		break;
+
 	case OVS_KEY_ATTR_UDP:
 		err = set_udp(skb, nla_data(nested_attr));
 		break;

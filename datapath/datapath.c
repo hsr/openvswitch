@@ -343,6 +343,8 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
 
 	stats_counter = &stats->n_hit;
 	ovs_flow_used(OVS_CB(skb)->flow, skb);
+	OVS_CB(skb)->mtdma_slot = 255; /* sch_mtdma qdisc will interpret
+									* this as an unmapped pkt */
 	ovs_execute_actions(dp, skb);
 
 out:
@@ -592,6 +594,9 @@ static int validate_set(const struct nlattr *a,
 	case OVS_KEY_ATTR_PRIORITY:
 	case OVS_KEY_ATTR_TUN_ID:
 	case OVS_KEY_ATTR_ETHERNET:
+		break;
+
+	case OVS_KEY_ATTR_MTDMA_SLOT:
 		break;
 
 	case OVS_KEY_ATTR_IPV4_TUNNEL:

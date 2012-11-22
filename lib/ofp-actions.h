@@ -94,7 +94,11 @@
     /* TODO:XXX Write-Actions */                                    \
     DEFINE_OFPACT(WRITE_METADATA,  ofpact_metadata,      ofpact)    \
     DEFINE_OFPACT(CLEAR_ACTIONS,   ofpact_null,          ofpact)    \
-    DEFINE_OFPACT(GOTO_TABLE,      ofpact_goto_table,    ofpact)
+    DEFINE_OFPACT(GOTO_TABLE,      ofpact_goto_table,    ofpact)    \
+                                                                    \
+                                                                    \
+    /* Mordia */                                                    \
+    DEFINE_OFPACT(MTDMA_SLOT,      ofpact_mtdma_slot,    ofpact)
 
 /* enum ofpact_type, with a member OFPACT_<ENUM> for each action. */
 enum OVS_PACKED_ENUM ofpact_type {
@@ -438,6 +442,14 @@ struct ofpact_cnt_ids {
 struct ofpact_goto_table {
     struct ofpact ofpact;
     uint8_t table_id;
+};
+
+/* OFPACT_MTDMA_SLOT,
+ *
+ */
+struct ofpact_mtdma_slot {
+    struct ofpact ofpact;
+    uint32_t slot;
 };
 
 /* Converting OpenFlow to ofpacts. */

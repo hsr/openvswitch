@@ -1194,7 +1194,7 @@ execute_set_action(struct ofpbuf *packet, const struct nlattr *a)
 
     case OVS_KEY_ATTR_ETHERNET:
         dp_netdev_set_dl(packet,
-                   nl_attr_get_unspec(a, sizeof(struct ovs_key_ethernet)));
+						 nl_attr_get_unspec(a, sizeof(struct ovs_key_ethernet)));
         break;
 
     case OVS_KEY_ATTR_IPV4:
@@ -1208,22 +1208,25 @@ execute_set_action(struct ofpbuf *packet, const struct nlattr *a)
         packet_set_tcp_port(packet, tcp_key->tcp_src, tcp_key->tcp_dst);
         break;
 
-     case OVS_KEY_ATTR_UDP:
+	case OVS_KEY_ATTR_UDP:
         udp_key = nl_attr_get_unspec(a, sizeof(struct ovs_key_udp));
         packet_set_udp_port(packet, udp_key->udp_src, udp_key->udp_dst);
         break;
 
-     case OVS_KEY_ATTR_UNSPEC:
-     case OVS_KEY_ATTR_ENCAP:
-     case OVS_KEY_ATTR_ETHERTYPE:
-     case OVS_KEY_ATTR_IN_PORT:
-     case OVS_KEY_ATTR_VLAN:
-     case OVS_KEY_ATTR_ICMP:
-     case OVS_KEY_ATTR_ICMPV6:
-     case OVS_KEY_ATTR_ARP:
-     case OVS_KEY_ATTR_ND:
-     case __OVS_KEY_ATTR_MAX:
-     default:
+	case OVS_KEY_ATTR_MTDMA_SLOT: /* Don't process mtdma_slot at user */
+		break;
+
+	case OVS_KEY_ATTR_UNSPEC:
+	case OVS_KEY_ATTR_ENCAP:
+	case OVS_KEY_ATTR_ETHERTYPE:
+	case OVS_KEY_ATTR_IN_PORT:
+	case OVS_KEY_ATTR_VLAN:
+	case OVS_KEY_ATTR_ICMP:
+	case OVS_KEY_ATTR_ICMPV6:
+	case OVS_KEY_ATTR_ARP:
+	case OVS_KEY_ATTR_ND:
+	case __OVS_KEY_ATTR_MAX:
+	default:
         NOT_REACHED();
     }
 }

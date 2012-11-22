@@ -847,6 +847,7 @@ const int ovs_key_lens[OVS_KEY_ATTR_MAX + 1] = {
 	[OVS_KEY_ATTR_ARP] = sizeof(struct ovs_key_arp),
 	[OVS_KEY_ATTR_ND] = sizeof(struct ovs_key_nd),
 	[OVS_KEY_ATTR_IPV4_TUNNEL] = sizeof(struct ovs_key_ipv4_tunnel),
+	[OVS_KEY_ATTR_MTDMA_SLOT] = sizeof(u32),
 
 	/* Not upstream. */
 	[OVS_KEY_ATTR_TUN_ID] = sizeof(__be64),

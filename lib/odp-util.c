@@ -107,6 +107,7 @@ ovs_key_attr_to_string(enum ovs_key_attr attr)
     case OVS_KEY_ATTR_ICMPV6: return "icmpv6";
     case OVS_KEY_ATTR_ARP: return "arp";
     case OVS_KEY_ATTR_ND: return "nd";
+    case OVS_KEY_ATTR_MTDMA_SLOT: return "mtdma_slot";
 
     case __OVS_KEY_ATTR_MAX:
     default:
@@ -616,6 +617,7 @@ odp_flow_key_attr_len(uint16_t type)
     case OVS_KEY_ATTR_ICMPV6: return sizeof(struct ovs_key_icmpv6);
     case OVS_KEY_ATTR_ARP: return sizeof(struct ovs_key_arp);
     case OVS_KEY_ATTR_ND: return sizeof(struct ovs_key_nd);
+    case OVS_KEY_ATTR_MTDMA_SLOT: return sizeof(uint32_t);
 
     case OVS_KEY_ATTR_UNSPEC:
     case __OVS_KEY_ATTR_MAX:
@@ -812,6 +814,11 @@ format_odp_key_attr(const struct nlattr *a, struct ds *ds)
         ds_put_char(ds, ')');
         break;
     }
+
+    case OVS_KEY_ATTR_MTDMA_SLOT:
+        ds_put_format(ds, "(mtdma_slot=%"PRIu32")", 
+					  nl_attr_get_u32(a));
+        break;
 
     case OVS_KEY_ATTR_UNSPEC:
     case __OVS_KEY_ATTR_MAX:
@@ -2043,6 +2050,17 @@ commit_set_port_action(const struct flow *flow, struct flow *base,
         commit_set_action(odp_actions, OVS_KEY_ATTR_UDP,
                           &port_key, sizeof(port_key));
     }
+}
+
+
+void
+commit_mtdma_slot_action(uint32_t mtdma_slot,
+						 struct ofpbuf *odp_actions)
+{
+	if (mtdma_slot != 255) {	/* 255 == no slot for sch_mtdma */
+        commit_set_action(odp_actions, OVS_KEY_ATTR_MTDMA_SLOT,
+                          &mtdma_slot, sizeof(mtdma_slot));
+	}
 }
 
 static void

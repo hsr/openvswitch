@@ -475,12 +475,14 @@ ofpact_from_openflow10(const union ofp_action *a, struct ofpbuf *out)
 
     case OFPUTIL_OFPAT10_SET_TP_DST:
         ofpact_put_SET_L4_DST_PORT(out)->port = ntohs(a->tp_port.tp_port);
-
         break;
 
     case OFPUTIL_OFPAT10_ENQUEUE:
         error = enqueue_from_openflow10((const struct ofp_action_enqueue *) a,
                                         out);
+
+    case OFPUTIL_OFPAT10_MTDMA_SLOT:
+        ofpact_put_MTDMA_SLOT(out)->slot = a->mtdma.slot;
         break;
 
 #define NXAST_ACTION(ENUM, STRUCT, EXTENSIBLE, NAME) case OFPUTIL_##ENUM:
@@ -1116,6 +1118,8 @@ ofpact_check__(const struct ofpact *a, const struct flow *flow, int max_ports)
     case OFPACT_GOTO_TABLE:
         return 0;
 
+    case OFPACT_MTDMA_SLOT:
+		return 0;
     default:
         NOT_REACHED();
     }
@@ -1379,6 +1383,11 @@ ofpact_to_nxast(const struct ofpact *a, struct ofpbuf *out)
     case OFPACT_CLEAR_ACTIONS:
     case OFPACT_GOTO_TABLE:
         NOT_REACHED();
+		break;
+    case OFPACT_MTDMA_SLOT:
+        ofputil_put_OFPAT10_MTDMA_SLOT(out)->slot
+            = ofpact_get_MTDMA_SLOT(a)->slot;
+        break;
     }
 }
 
@@ -1389,7 +1398,6 @@ ofpact_output_to_openflow10(const struct ofpact_output *output,
                             struct ofpbuf *out)
 {
     struct ofp10_action_output *oao;
-
     oao = ofputil_put_OFPAT10_OUTPUT(out);
     oao->port = htons(output->port);
     oao->max_len = htons(output->max_len);
@@ -1472,6 +1480,11 @@ ofpact_to_openflow10(const struct ofpact *a, struct ofpbuf *out)
     case OFPACT_GOTO_TABLE:
         /* TODO:XXX */
         break;
+
+	case OFPACT_MTDMA_SLOT:
+		ofputil_put_OFPAT10_MTDMA_SLOT(out)->slot
+			= ofpact_get_MTDMA_SLOT(a)->slot;
+		break;
 
     case OFPACT_CONTROLLER:
     case OFPACT_OUTPUT_REG:
@@ -1630,6 +1643,10 @@ ofpact_to_openflow11(const struct ofpact *a, struct ofpbuf *out)
     case OFPACT_EXIT:
         ofpact_to_nxast(a, out);
         break;
+    case OFPACT_MTDMA_SLOT:
+        ofputil_put_OFPAT10_MTDMA_SLOT(out)->slot
+            = ofpact_get_MTDMA_SLOT(a)->slot;
+        break;
     }
 }
 
@@ -1753,6 +1770,7 @@ ofpact_outputs_to_port(const struct ofpact *ofpact, uint16_t port)
     case OFPACT_EXIT:
     case OFPACT_CLEAR_ACTIONS:
     case OFPACT_GOTO_TABLE:
+	case OFPACT_MTDMA_SLOT:
     default:
         return false;
     }
@@ -2049,6 +2067,11 @@ ofpact_format(const struct ofpact *a, struct ds *s)
                           OVSINST_OFPIT11_GOTO_TABLE),
                       ofpact_get_GOTO_TABLE(a)->table_id);
         break;
+
+    case OFPACT_MTDMA_SLOT:
+        ds_put_format(s, "mtdma_slot:%"PRIu32,
+                      ofpact_get_MTDMA_SLOT(a)->slot);
+		break;
     }
 }
 

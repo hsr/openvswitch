@@ -70,6 +70,7 @@ odp_action_len(uint16_t type)
 
     switch ((enum ovs_action_attr) type) {
     case OVS_ACTION_ATTR_OUTPUT: return sizeof(uint32_t);
+    case OVS_ACTION_ATTR_M_OUTPUT: return sizeof(struct ovs_action_m_output);
     case OVS_ACTION_ATTR_USERSPACE: return -2;
     case OVS_ACTION_ATTR_PUSH_VLAN: return sizeof(struct ovs_action_push_vlan);
     case OVS_ACTION_ATTR_POP_VLAN: return 0;
@@ -280,6 +281,7 @@ format_odp_action(struct ds *ds, const struct nlattr *a)
     int expected_len;
     enum ovs_action_attr type = nl_attr_type(a);
     const struct ovs_action_push_vlan *vlan;
+    const struct ovs_action_m_output *mo;
 
     expected_len = odp_action_len(nl_attr_type(a));
     if (expected_len != -2 && nl_attr_get_size(a) != expected_len) {
@@ -292,6 +294,14 @@ format_odp_action(struct ds *ds, const struct nlattr *a)
     switch (type) {
     case OVS_ACTION_ATTR_OUTPUT:
         ds_put_format(ds, "%"PRIu16, nl_attr_get_u32(a));
+        break;
+
+    case OVS_ACTION_ATTR_M_OUTPUT:
+		mo = nl_attr_get(a);
+		ds_put_format(ds, "m_output:eps=%"PRIu16",%"PRIu16
+					  ",ocs=%"PRIu16",%"PRIu16,
+					  mo->port_eps,mo->time_eps,
+					  mo->port_ocs,mo->time_ocs);
         break;
     case OVS_ACTION_ATTR_USERSPACE:
         format_odp_userspace_action(ds, a);
@@ -2061,6 +2071,14 @@ commit_mtdma_slot_action(uint32_t mtdma_slot,
         commit_set_action(odp_actions, OVS_KEY_ATTR_MTDMA_SLOT,
                           &mtdma_slot, sizeof(mtdma_slot));
 	}
+}
+
+void
+commit_m_output_action(struct ovs_action_m_output *m,
+					   struct ofpbuf *odp_actions)
+{
+	nl_msg_put_unspec(odp_actions, OVS_ACTION_ATTR_M_OUTPUT,
+					  m, sizeof(struct ovs_action_m_output));
 }
 
 static void

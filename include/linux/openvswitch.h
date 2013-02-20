@@ -472,6 +472,17 @@ struct ovs_action_push_vlan {
 };
 
 /**
+ * struct ovs_action_m_output
+ */
+struct ovs_action_m_output {
+    __u16 port_eps;              /* EPS output port. */
+    __u16 time_eps;              /* EPS active time. */
+    __u16 port_ocs;              /* OCS output port. */
+    __u16 time_ocs;              /* OCS active time. */
+};
+
+
+/**
  * enum ovs_action_attr - Action types.
  *
  * @OVS_ACTION_ATTR_OUTPUT: Output packet to port.
@@ -494,6 +505,7 @@ struct ovs_action_push_vlan {
 enum ovs_action_attr {
 	OVS_ACTION_ATTR_UNSPEC,
 	OVS_ACTION_ATTR_OUTPUT,	      /* u32 port number. */
+	OVS_ACTION_ATTR_M_OUTPUT,     /* struct ovs_action_m_output. */
 	OVS_ACTION_ATTR_USERSPACE,    /* Nested OVS_USERSPACE_ATTR_*. */
 	OVS_ACTION_ATTR_SET,          /* One nested OVS_KEY_ATTR_*. */
 	OVS_ACTION_ATTR_PUSH_VLAN,    /* struct ovs_action_push_vlan. */

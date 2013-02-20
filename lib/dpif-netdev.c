@@ -1249,6 +1249,10 @@ dp_netdev_execute_actions(struct dp_netdev *dp,
             dp_netdev_output_port(dp, packet, nl_attr_get_u32(a));
             break;
 
+        case OVS_ACTION_ATTR_M_OUTPUT:
+			/* Do nothing. Don't implement m_output at the user */
+            break;
+
         case OVS_ACTION_ATTR_USERSPACE:
             dp_netdev_action_userspace(dp, packet, key, a);
             break;

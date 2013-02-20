@@ -98,7 +98,10 @@
                                                                     \
                                                                     \
     /* Mordia */                                                    \
-    DEFINE_OFPACT(MTDMA_SLOT,      ofpact_mtdma_slot,    ofpact)
+    DEFINE_OFPACT(MTDMA_SLOT,      ofpact_mtdma_slot,    ofpact)    \
+                                                                    \
+    /* TCP Optics */                                                \
+    DEFINE_OFPACT(M_OUTPUT,        ofpact_m_output,      ofpact)
 
 /* enum ofpact_type, with a member OFPACT_<ENUM> for each action. */
 enum OVS_PACKED_ENUM ofpact_type {
@@ -199,6 +202,18 @@ struct ofpact_output {
     uint16_t port;              /* Output port. */
     uint16_t max_len;           /* Max send len, for port OFPP_CONTROLLER. */
 };
+
+/* OFPACT_M_OUTPUT.
+ *
+ * Used for OFPAT10_M_OUTPUT. */
+struct ofpact_m_output {
+    struct ofpact ofpact;
+    uint16_t port_eps;              /* EPS output port. */
+    uint16_t time_eps;              /* EPS active time. */
+    uint16_t port_ocs;              /* OCS output port. */
+    uint16_t time_ocs;              /* OCS active time. */
+};
+
 
 /* OFPACT_CONTROLLER.
  *

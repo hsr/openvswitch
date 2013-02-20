@@ -283,6 +283,8 @@ struct action_xlate_ctx {
     bool exit;                  /* No further actions should be processed. */
     struct flow orig_flow;      /* Copy of original flow. */
     uint32_t mtdma_slot;        /* MTDMA Slot number. */
+	
+	struct ovs_action_m_output m;
 };
 
 static void action_xlate_ctx_init(struct action_xlate_ctx *,
@@ -5393,7 +5395,21 @@ compose_output_action__(struct action_xlate_ctx *ctx, uint16_t ofp_port,
     }
     commit_odp_actions(&ctx->flow, &ctx->base_flow, ctx->odp_actions);
 	commit_mtdma_slot_action(ctx->mtdma_slot, ctx->odp_actions);
-    nl_msg_put_u32(ctx->odp_actions, OVS_ACTION_ATTR_OUTPUT, out_port);
+
+	if (ctx->m.port_eps || ctx->m.port_ocs) {
+		int odp_ocs_port = ofp_port_to_odp_port(ctx->ofproto, ctx->m.port_ocs);
+		int out_ocs_port = vsp_realdev_to_vlandev(ctx->ofproto, odp_ocs_port,
+												  ctx->flow.vlan_tci);
+		struct ovs_action_m_output m = {
+			.port_eps = out_port,
+			.time_eps = ctx->m.time_eps,
+			.port_ocs = out_ocs_port,
+			.time_ocs = ctx->m.time_ocs,
+		};
+		commit_m_output_action(&m, ctx->odp_actions);
+	} else {
+		nl_msg_put_u32(ctx->odp_actions, OVS_ACTION_ATTR_OUTPUT, out_port);
+	}
 
     ctx->sflow_odp_port = odp_port;
     ctx->sflow_n_outputs++;
@@ -5884,6 +5900,16 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
                                 ofpact_get_OUTPUT(a)->max_len, true);
             break;
 
+        case OFPACT_M_OUTPUT:
+			ctx->m.port_eps = ofpact_get_M_OUTPUT(a)->port_eps;
+			ctx->m.time_eps = ofpact_get_M_OUTPUT(a)->time_eps;
+			ctx->m.port_ocs = ofpact_get_M_OUTPUT(a)->port_ocs;
+			ctx->m.time_ocs = ofpact_get_M_OUTPUT(a)->time_ocs;
+			/* max_len=0 doesn't have a meaning in this function, but
+			 * it is there for compatibility */
+            xlate_output_action(ctx, ofpact_get_M_OUTPUT(a)->port_eps, 0, true);
+            break;
+
         case OFPACT_CONTROLLER:
             controller = ofpact_get_CONTROLLER(a);
             execute_controller_action(ctx, controller->max_len,
@@ -6078,6 +6104,7 @@ action_xlate_ctx_init(struct action_xlate_ctx *ctx,
     ctx->report_hook = NULL;
     ctx->resubmit_stats = NULL;
 	ctx->mtdma_slot = 255;	/* No slot assigned (sch_mtdma default) */
+	memset(&ctx->m, 0, sizeof(struct ovs_action_m_output));
 }
 
 /* Translates the 'ofpacts_len' bytes of "struct ofpacts" starting at 'ofpacts'

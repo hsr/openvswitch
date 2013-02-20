@@ -204,6 +204,7 @@ enum ofp10_action_type {
     OFPAT10_SET_TP_DST,         /* TCP/UDP destination port. */
     OFPAT10_ENQUEUE,            /* Output to queue. */
     OFPAT10_MTDMA_SLOT,         /* Set mtdma slot */
+    OFPAT10_M_OUTPUT,           /* Multiple output action, for tcpoptics */
     OFPAT10_VENDOR = 0xffff
 };
 
@@ -218,6 +219,22 @@ struct ofp10_action_output {
     ovs_be16 max_len;               /* Max length to send to controller. */
 };
 OFP_ASSERT(sizeof(struct ofp10_action_output) == 8);
+
+/* Action structure for OFPAT10_M_OUTPUT, which sends packets out
+   'port_ocs' for the time interval "when the ocs port is active" and
+   'port_eps' otherwise.
+
+ */
+struct ofp_action_m_output {
+    ovs_be16 type;                  /* OFPAT10_M_OUTPUT. */
+    ovs_be16 len;                   /* Length is 16. */
+    ovs_be16 port_eps;              /* EPS output port. */
+    ovs_be16 time_eps;              /* EPS active time. */
+    ovs_be16 port_ocs;              /* OCS output port. */
+    ovs_be16 time_ocs;              /* OCS active time. */
+    uint8_t  pad[4];                /* Not sure if we need padding here */
+};
+OFP_ASSERT(sizeof(struct ofp_action_m_output) == 16);
 
 /* Action header for OFPAT10_VENDOR. The rest of the body is vendor-defined. */
 struct ofp_action_vendor_header {

@@ -49,6 +49,20 @@ output_from_openflow10(const struct ofp10_action_output *oao,
 }
 
 static enum ofperr
+m_output_from_openflow10(const struct ofp_action_m_output *a,
+						 struct ofpbuf *out)
+{
+    struct ofpact_m_output *mo;
+
+    mo = ofpact_put_M_OUTPUT(out);
+	mo->port_eps = ntohs(a->port_eps);
+	mo->time_eps = ntohs(a->time_eps);
+	mo->port_ocs = ntohs(a->port_ocs);
+	mo->time_ocs = ntohs(a->time_ocs);
+    return 0;
+}
+
+static enum ofperr
 enqueue_from_openflow10(const struct ofp_action_enqueue *oae,
                         struct ofpbuf *out)
 {
@@ -409,6 +423,7 @@ ofpact_from_nxast(const union ofp_action *a, enum ofputil_action_code code,
 static enum ofperr
 ofpact_from_openflow10(const union ofp_action *a, struct ofpbuf *out)
 {
+	struct ofp_action_m_output *m;
     enum ofputil_action_code code;
     enum ofperr error;
 
@@ -483,6 +498,10 @@ ofpact_from_openflow10(const union ofp_action *a, struct ofpbuf *out)
 
     case OFPUTIL_OFPAT10_MTDMA_SLOT:
         ofpact_put_MTDMA_SLOT(out)->slot = a->mtdma.slot;
+        break;
+
+    case OFPUTIL_OFPAT10_M_OUTPUT:
+		m_output_from_openflow10(a, out);
         break;
 
 #define NXAST_ACTION(ENUM, STRUCT, EXTENSIBLE, NAME) case OFPUTIL_##ENUM:
@@ -1120,6 +1139,14 @@ ofpact_check__(const struct ofpact *a, const struct flow *flow, int max_ports)
 
     case OFPACT_MTDMA_SLOT:
 		return 0;
+
+    case OFPACT_M_OUTPUT:
+        return (
+			ofputil_check_output_port(
+				ofpact_get_M_OUTPUT(a)->port_eps, max_ports)
+			|| ofputil_check_output_port(
+				ofpact_get_M_OUTPUT(a)->port_ocs, max_ports));
+
     default:
         NOT_REACHED();
     }
@@ -1388,6 +1415,9 @@ ofpact_to_nxast(const struct ofpact *a, struct ofpbuf *out)
         ofputil_put_OFPAT10_MTDMA_SLOT(out)->slot
             = ofpact_get_MTDMA_SLOT(a)->slot;
         break;
+    case OFPACT_M_OUTPUT:
+		NOT_REACHED();
+		break;
     }
 }
 
@@ -1402,6 +1432,19 @@ ofpact_output_to_openflow10(const struct ofpact_output *output,
     oao->port = htons(output->port);
     oao->max_len = htons(output->max_len);
 }
+
+static void
+ofpact_m_output_to_openflow10(const struct ofpact_m_output *output,
+							  struct ofpbuf *out)
+{
+    struct ofp_action_m_output *oao;
+    oao = ofputil_put_OFPAT10_M_OUTPUT(out);
+    oao->port_eps = htons(output->port_eps);
+    oao->port_ocs = htons(output->port_ocs);
+    oao->time_eps = htons(output->time_eps);
+    oao->time_ocs = htons(output->time_ocs);
+}
+
 
 static void
 ofpact_enqueue_to_openflow10(const struct ofpact_enqueue *enqueue,
@@ -1485,6 +1528,10 @@ ofpact_to_openflow10(const struct ofpact *a, struct ofpbuf *out)
 		ofputil_put_OFPAT10_MTDMA_SLOT(out)->slot
 			= ofpact_get_MTDMA_SLOT(a)->slot;
 		break;
+
+    case OFPACT_M_OUTPUT:
+        ofpact_m_output_to_openflow10(ofpact_get_M_OUTPUT(a), out);
+        break;
 
     case OFPACT_CONTROLLER:
     case OFPACT_OUTPUT_REG:
@@ -1647,6 +1694,9 @@ ofpact_to_openflow11(const struct ofpact *a, struct ofpbuf *out)
         ofputil_put_OFPAT10_MTDMA_SLOT(out)->slot
             = ofpact_get_MTDMA_SLOT(a)->slot;
         break;
+	case OFPACT_M_OUTPUT:
+		printf("what the hell 1\n");
+		break;
     }
 }
 
@@ -1736,6 +1786,7 @@ ofpact_outputs_to_port(const struct ofpact *ofpact, uint16_t port)
     switch (ofpact->type) {
     case OFPACT_OUTPUT:
         return ofpact_get_OUTPUT(ofpact)->port == port;
+
     case OFPACT_ENQUEUE:
         return ofpact_get_ENQUEUE(ofpact)->port == port;
     case OFPACT_CONTROLLER:
@@ -1771,6 +1822,10 @@ ofpact_outputs_to_port(const struct ofpact *ofpact, uint16_t port)
     case OFPACT_CLEAR_ACTIONS:
     case OFPACT_GOTO_TABLE:
 	case OFPACT_MTDMA_SLOT:
+		return false;
+	case OFPACT_M_OUTPUT:
+        return (ofpact_get_M_OUTPUT(ofpact)->port_eps == port
+				|| ofpact_get_M_OUTPUT(ofpact)->port_ocs == port);
     default:
         return false;
     }
@@ -1861,7 +1916,7 @@ ofpact_format(const struct ofpact *a, struct ds *s)
     const struct ofpact_controller *controller;
     const struct ofpact_metadata *metadata;
     const struct ofpact_tunnel *tunnel;
-    uint16_t port;
+    uint16_t port, port_eps, port_ocs, time_eps, time_ocs;
 
     switch (a->type) {
     case OFPACT_OUTPUT:
@@ -2072,6 +2127,20 @@ ofpact_format(const struct ofpact *a, struct ds *s)
         ds_put_format(s, "mtdma_slot:%"PRIu32,
                       ofpact_get_MTDMA_SLOT(a)->slot);
 		break;
+    case OFPACT_M_OUTPUT:
+        port_eps = ofpact_get_M_OUTPUT(a)->port_eps;
+        port_ocs = ofpact_get_M_OUTPUT(a)->port_ocs;
+        time_eps = ofpact_get_M_OUTPUT(a)->time_eps;
+        time_ocs = ofpact_get_M_OUTPUT(a)->time_ocs;
+        if (port_eps < OFPP_MAX && port_ocs < OFPP_MAX) {
+            ds_put_format(s, "m_output:eps=%"PRIu16",%"PRIu16
+						  ",ocs=%"PRIu16",%"PRIu16,
+						  port_eps,time_eps,port_ocs,time_ocs);
+        } else {
+			ds_put_format(s, ":max_port_err");
+        }
+        break;
+
     }
 }
 

@@ -674,6 +674,7 @@ static int validate_actions(const struct nlattr *attr,
 		/* Expected argument lengths, (u32)-1 for variable length. */
 		static const u32 action_lens[OVS_ACTION_ATTR_MAX + 1] = {
 			[OVS_ACTION_ATTR_OUTPUT] = sizeof(u32),
+			[OVS_ACTION_ATTR_M_OUTPUT] = sizeof(struct ovs_action_m_output),
 			[OVS_ACTION_ATTR_USERSPACE] = (u32)-1,
 			[OVS_ACTION_ATTR_PUSH_VLAN] = sizeof(struct ovs_action_push_vlan),
 			[OVS_ACTION_ATTR_POP_VLAN] = 0,
@@ -681,6 +682,7 @@ static int validate_actions(const struct nlattr *attr,
 			[OVS_ACTION_ATTR_SAMPLE] = (u32)-1
 		};
 		const struct ovs_action_push_vlan *vlan;
+		const struct ovs_action_m_output *mo;
 		int type = nla_type(a);
 
 		if (type > OVS_ACTION_ATTR_MAX ||
@@ -703,6 +705,12 @@ static int validate_actions(const struct nlattr *attr,
 				return -EINVAL;
 			break;
 
+		case OVS_ACTION_ATTR_M_OUTPUT:
+			mo = nla_data(a);
+			if (mo->port_eps >= DP_MAX_PORTS
+				|| mo->port_ocs >= DP_MAX_PORTS)
+				return -EINVAL;
+			break;
 
 		case OVS_ACTION_ATTR_POP_VLAN:
 			break;

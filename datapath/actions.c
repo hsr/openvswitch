@@ -124,8 +124,20 @@ static int push_vlan(struct sk_buff *skb, const struct ovs_action_push_vlan *vla
 	return 0;
 }
 
+static int decide_m_output(const struct ovs_action_m_output *mo)
+{
+	uint64_t cycle = ktime_to_us(ktime_get());
+	
+	cycle = cycle % (mo->time_ocs + mo->time_eps);
+	
+	if (cycle < mo->time_ocs)
+		return mo->port_ocs;
+	return mo->port_eps;
+}
+
+
 static int set_eth_addr(struct sk_buff *skb,
-			const struct ovs_key_ethernet *eth_key)
+						const struct ovs_key_ethernet *eth_key)
 {
 	int err;
 	err = make_writable(skb, ETH_HLEN);
@@ -414,6 +426,10 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
 		switch (nla_type(a)) {
 		case OVS_ACTION_ATTR_OUTPUT:
 			prev_port = nla_get_u32(a);
+			break;
+
+		case OVS_ACTION_ATTR_M_OUTPUT:
+			prev_port = decide_m_output(nla_data(a));
 			break;
 
 		case OVS_ACTION_ATTR_USERSPACE:

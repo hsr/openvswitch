@@ -159,6 +159,23 @@ parse_output(char *arg, struct ofpbuf *ofpacts)
 }
 
 static void
+parse_m_output(char *arg, struct ofpbuf *ofpacts)
+{
+	unsigned int port_eps, time_eps, port_ocs, time_ocs;
+	struct ofpact_m_output *output;
+    if (sscanf(arg, "%"PRIu16"-%"PRIu16"-%"PRIu16"-%"PRIu16, 
+			   &port_eps, &time_eps, &port_ocs, &time_ocs) != 4) {
+		ovs_fatal(0, "Incorrect m_output format");
+	}
+	output = ofpact_put_M_OUTPUT(ofpacts);
+	output->port_eps = (uint16_t) port_eps;
+	output->time_eps = (uint16_t) time_eps;
+	output->port_ocs = (uint16_t) port_ocs;
+	output->time_ocs = (uint16_t) time_ocs;
+}
+
+
+static void
 parse_resubmit(char *arg, struct ofpbuf *ofpacts)
 {
     struct ofpact_resubmit *resubmit;
@@ -396,6 +413,10 @@ parse_named_action(enum ofputil_action_code code, const struct flow *flow,
     case OFPUTIL_OFPAT10_OUTPUT:
     case OFPUTIL_OFPAT11_OUTPUT:
         parse_output(arg, ofpacts);
+        break;
+
+    case OFPUTIL_OFPAT10_M_OUTPUT:
+		parse_m_output(arg, ofpacts);
         break;
 
     case OFPUTIL_OFPAT10_SET_VLAN_VID:
